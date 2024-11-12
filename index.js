@@ -1,66 +1,96 @@
-const form = document.querySelector("#form");
-const input = document.querySelector("#input");
-const block = document.querySelector("#block");
-const btn = document.querySelector("#btn");
+const field = document.querySelector("#field");
+const button = document.querySelector("#button");
+const todoWrapper = document.querySelector("#todo-items");
+const clear = document.querySelector("#clear");
 
-function loadTodos() {
-    const savedTodos = JSON.parse(localStorage.getItem("todos")) || [];
-    savedTodos.forEach(todo => {
-        createTodoItem(todo);
-    });
+function validate(field) {
+  if (field.value.length < 4) {
+    alert("ToDo eng kamida 4 ta belgidan iborat bolsin");
+    field.focus();
+    return false;
+  }
+  return true;
 }
 
-function saveTodos(todos) {
-    localStorage.setItem("todos", JSON.stringify(todos));
+function createCard(data) {
+  return `
+     <div class="todo-item">
+          <p>${data.name}</p>
+          <span data-id = ${data.id} class = "delete">delete</span>
+        </div>
+    `;
 }
 
-function createTodoItem(text) {
-    const todoItem = document.createElement("div");
-    todoItem.style.display = "flex";
-    todoItem.style.alignItems = "center";
-    todoItem.style.justifyContent = "space-between";
-    todoItem.style.border = "1px solid #ddd";
-    todoItem.style.borderRadius = "8px";
-    todoItem.style.marginTop = "10px";
-    todoItem.style.padding = "10px";
-    todoItem.style.backgroundColor = "#f4f4f4";
-    todoItem.style.width = "300px";
+function getDataFromLocalStorage() {
+  let data = [];
+  if (localStorage.getItem("todos")) {
+    data = JSON.parse(localStorage.getItem("todos"));
+  }
 
-    const todoText = document.createElement("span");
-    todoText.textContent = text;
-
-    const deleteButton = document.createElement("img");
-    deleteButton.src = "https://img.icons8.com/ios-glyphs/30/000000/trash.png";
-    deleteButton.alt = "Trash Icon";
-    deleteButton.style.marginLeft = "10px";
-    deleteButton.style.cursor = "pointer";
-
-    deleteButton.addEventListener("click", () => {
-        block.removeChild(todoItem);
-
-        let todos = JSON.parse(localStorage.getItem("todos")) || [];
-        todos = todos.filter(todo => todo !== text);
-        saveTodos(todos);
-    });
-
-    todoItem.appendChild(todoText);
-    todoItem.appendChild(deleteButton);
-    block.appendChild(todoItem);
+  return data;
 }
 
-btn.addEventListener("click", function(event) {
+button &&
+  button.addEventListener("click", function (event) {
     event.preventDefault();
-    const text = input.value.trim();
-    if (text) {
-        createTodoItem(text);
 
-        const todos = JSON.parse(localStorage.getItem("todos")) || [];
-        todos.push(text);
-        saveTodos(todos);
-
-        input.value = ""; 
+    const isValid = validate(field);
+    if (!isValid) {
+      return;
     }
+
+    const todo = {
+      id: Date.now(),
+      name: field.value,
+    };
+
+    const card = createCard(todo);
+    let res = card + todoWrapper.innerHTML;
+    todoWrapper.innerHTML = res;
+    field.value = "";
+
+    let todos = getDataFromLocalStorage();
+    todos.push(todo);
+    localStorage.setItem("todos", JSON.stringify(todos));
+  });
+
+document.addEventListener("DOMContentLoaded", function () {
+  let todos = getDataFromLocalStorage();
+
+  todos.forEach((todo) => {
+    let card = createCard(todo);
+    todoWrapper.innerHTML += card;
+  });
+
+  let buttons = document.querySelectorAll(".delete");
+
+  buttons.length > 0 &&
+    buttons.forEach((btn) => {
+      btn &&
+        btn.addEventListener("click", function (event) {
+          let isDelete = confirm("Rostan ham ochirmoqchimisiz ???");
+
+          if (isDelete) {
+            this.parentNode.remove();
+            let id = this.getAttribute("data-id");
+            if (id) {
+              todos = todos.filter((value) => {
+                return value.id != id;
+              });
+
+              localStorage.setItem("todos", JSON.stringify(todos));
+            }
+          }
+        });
+    });
 });
 
-loadTodos();
-    
+clear &&
+  clear.addEventListener("click", function (event) {
+    event.preventDefault();
+    let isClear = confirm("Rostdan ham hammasini o'chirmoqchimisiz");
+    if (isClear) {
+      todoWrapper.innerHTML = "";
+      localStorage.removeItem("todos");
+    }
+  });
